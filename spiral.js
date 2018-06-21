@@ -1,4 +1,7 @@
-const N = 3;
+//todo: ввод N из консоли
+const N = 4;
+
+
 let arr = [];
 
 const min = 0;

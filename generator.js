@@ -1,7 +1,7 @@
 //
 // Требуемые модули:
 //
-// npm redis install
+// npm install redis
 // npm instal lorem-ipsum
 //
 
@@ -32,7 +32,7 @@ App.prototype.checkStatus = function() {
         } else {
             if (generator_id == null) {
                 obj.setStatus();
-            } else if (generator_id == obj.id) {
+            } else if (generator_id === obj.id) {
                 obj.updateStatus();
             } else {
                 obj.isGenerator = false;
@@ -90,7 +90,7 @@ App.prototype.sendMessage = function() {
 
 //Функция с вероятностью 5% отправляет переданное ей сообщение в Redis
 function verify(message) {
-    if (randomInt(0, 19) == 0) {            //заданная вероятность обнаржуения ошибки 5%
+    if (randomInt(0, 19) === 0) {            //заданная вероятность обнаржуения ошибки 5%
         client.lpush("errors", message, function (err, reply) {
             if (err) {
                 console.log("Ошибка при отправке сообщения в список неправильных: " + err);
@@ -110,7 +110,6 @@ function verify(message) {
 
 //Берет сообщение из списка messages в Redis и обрабатывает его
 App.prototype.verifyMessage = function() {
-    let obj = this;
     client.rpop("messages", function(err, message) {
         if (err) {
             console.log("Ошибка при чтении сообщения обработчиком: " + err);
@@ -164,10 +163,10 @@ function controller() {
 }
 
 let app = new App();
-if (process.argv[2] == "getErrors") {
+if (process.argv[2] === "getErrors") {
     app.getErrors();
 }else{
-    setInterval(app.checkStatus, 500);
+    setInterval(() => {app.checkStatus()}, 500);
     controller();
 }
 

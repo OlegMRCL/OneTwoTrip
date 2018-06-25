@@ -5,19 +5,15 @@ let rl = readline.createInterface({
     terminal: false
 });
 
-
-
-
 const min = 10;
 const max = 99;
 
 //Выдает случайное число в диапозоне min...max
 function randomInt(min, max) {
-    var rand = min - 0.5 + Math.random() * (max - min + 1);
+    let rand = min - 0.5 + Math.random() * (max - min + 1);
     rand = Math.round(rand);
     return rand;
 }
-
 
 const x_dir = [-1, 0, 1, 0];
 const y_dir = [0, 1, 0, -1];
@@ -59,9 +55,6 @@ Spiral.prototype.unwrap = function(arr) {
         this.repeat = !this.repeat;
     }
 };
-
-
-
 
 console.log("Будет создана матрица (2N - 1)x(2N - 1) и заполнена случайными числами.");
 console.log("Введите N...");

@@ -1,0 +1,19 @@
+{
+  "name": "onetwotrip",
+  "version": "1.0.0",
+  "description": "for test task",
+  "main": "generator.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/OlegMRCL/OneTwoTrip.git"
+  },
+  "author": "Oleg Merkulov",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/OlegMRCL/OneTwoTrip/issues"
+  },
+  "homepage": "https://github.com/OlegMRCL/OneTwoTrip#readme"
+}

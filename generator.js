@@ -1,11 +1,18 @@
+
+
+
 let crypto = require('crypto');
+let loremIpsum = require('lorem-ipsum');
 let redis = require('redis'),
     client = redis.createClient();
 
 function App () {
     this.id = crypto.randomBytes(8).toString('hex');
+    this.isGenerator = false;
 
     this.time = new Date;
+
+    let obj = this;
 
 
     //Смотрит на "generator_id" в Redis.
@@ -14,62 +21,164 @@ function App () {
     // (2) generator_id == this.id :    значит приложение является активным генератором
     //                                  и нужно обновить его статус.
     // (3) generator_id != this.id (&& != null) : значит активным генератором пока что является другое приложение.
-    //  В случаях (1) и (2) вызывается updateStatus и возвращается true.
-    //  Иначе (случай (3)) статус не обновляется и возвращается false.
+
     this.checkStatus = function() {
-        let generator_id = client.get('generator_id');
-        if ((generator_id == this.id) || (generator_id == null)) {
-            this.updateStatus();
-            return true;
-        }
-        return false;
+        client.get('generator_id', function(err, generator_id) {
+            if (err) {
+                console.log("Возникла ошибка при провверке статуса генератора!: " + err);
+                obj.isGenerator = false;
+            } else {
+                if (generator_id == null) {
+                    obj.setStatus();
+                } else if (generator_id == obj.id) {
+                    obj.updateStatus();
+                } else {
+                    obj.isGenerator = false;
+                }
+            }
+        });
     };
 
-    this.updateStatus = function() {
-        client.setex('generator_id', 1, this.id, redis.print);
+
+
+
+    this.setStatus = function() {
+        client.set('generator_id', this.id, "EX", 10, "NX", function (err, reply) {
+            if (err) {
+                console.log("Возникла ошибка при запуске генератора: " + err);
+                obj.isGenerator = false;
+            } else if (reply == null) {
+                console.log("Была попытка стать генератором, но кто-то другой опередил!");
+                obj.isGenerator = false;
+            } else {
+                console.log();
+                console.log("Запущен генератор!");
+                obj.isGenerator = true;
+            }
+        });
     };
+
+
+
+    this.updateStatus = function() {
+        client.expire('generator_id', 1, function (err, reply) {
+            if (err) {
+                console.log("Возникла ошибка при обновлении статуса генератора: " + err);
+                console.log("Генератор прекратил работу!");
+                console.log();
+                obj.isGenerator = false;
+            }
+        });
+    };
+
+
+
 
     let Message = function(id, time) {
         this.genAt = time.toISOString();
         this.genBy = id;
-        this.text = crypto.randomBytes(20).toString('hex');
+        this.text = loremIpsum({
+            count: 1,
+            units: 'sentences',
+            sentenceLowerBound: 4,
+            sentenceUpperBound: 20
+        });
     };
+
 
     this.sendMessage = function() {
         let message = new Message(this.id, this.time);
         let json = JSON.stringify(message);
-        client.lpush(0, json, redis.print);
+        client.lpush("messages", json, function (err, reply) {
+           if (err) {
+               console.log("Ошибка при отпраке сообщения!: " + err);
+               console.log("Генератор прекратил работу!");
+               obj.isGenerator = false;
+           } else {
+               console.log("Сгенерировано сообщение: " + json);
+           }
+        });
     };
+
+
+    function verify(message) {
+        if (randomInt(0, 19) == 0) {            //заданная вероятность обнаржуения ошибки 5%
+            client.lpush("errors", message, function (err, reply) {
+                if (err) {
+                    console.log("Ошибка при отправке сообщения в список неправильных: " + err);
+                } else {
+                    console.log("Проверено сообщение: " + message);
+                    console.log("Сообщение отправлено в список неправильных!");
+                    console.log();
+                }
+            });
+
+        }else{
+            console.log("Проверено сообщение: " + message);
+            console.log("Сообщение правильное!");
+            console.log();
+        }
+    }
+
 
     this.verifyMessage = function() {
-        let message = client.rpop(0, redis.print);
-        if (randomInt(0, 19) == 0) {
-            let key = "ERROR! " + this.time.toISOString();
-            client.set(key, message);
-        }
+        client.rpop("messages", function(err, message) {
+            if (err) {
+                console.log("Ошибка при чтении сообщения обработчиком: " + err);
+            } else if (message != null) {
+               verify(message);
+            }
+
+        });
     };
 
+
+
+    this.getErrors = function() {
+        client.rpop("errors", function(err, message) {
+            if (err) {
+                console.log("Ошибка при чтении сообщения из списка неправильных: " + err);
+            } else if (message) {
+                console.log("Неправильное сообщение: " + message);
+                obj.getErrors();
+            }
+        })
+    }
+
 }
-//todo: запуск с параметром 'getErrors'
+
+
+
 
 
 function randomInt(min, max) {
-    var rand = min - 0.5 + Math.random() * (max - min + 1)
+    let rand = min - 0.5 + Math.random() * (max - min + 1);
     rand = Math.round(rand);
     return rand;
 }
 
 
+function controller() {
+    if (app.isGenerator) {
+        app.sendMessage();
+        setTimeout(controller, 500);
+    }else{
+        app.verifyMessage();
+        setTimeout(controller, 4);
+    }
+}
+
+
 
 let app = new App();
+if (process.argv[2] == "getErrors") {
 
-for (;;) {
-    while (app.checkStatus()){
-        app.sendMessage()
+    app.getErrors();
 
-        //TODO: timeout 0.500s
+}else{
+    setInterval(app.checkStatus, 500);
 
-    }
-    app.verifyMessage();
-
+    controller();
 }
+
+

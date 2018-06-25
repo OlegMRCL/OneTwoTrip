@@ -2,7 +2,7 @@
 // Требуемые модули:
 //
 // npm install redis
-// npm instal lorem-ipsum
+// npm install lorem-ipsum
 //
 
 let crypto = require('crypto');

@@ -15,5 +15,9 @@
   "bugs": {
     "url": "https://github.com/OlegMRCL/OneTwoTrip/issues"
   },
-  "homepage": "https://github.com/OlegMRCL/OneTwoTrip#readme"
+  "homepage": "https://github.com/OlegMRCL/OneTwoTrip#readme",
+  "dependencies": {
+    "lorem-ipsum": "^1.0.5",
+    "redis": "^2.8.0"
+  }
 }
